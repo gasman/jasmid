@@ -87,7 +87,7 @@ function Replayer(midiFile) {
 							synth.channels[event.channel].noteOff(event.noteNumber, event.velocity);
 							break;
 						case 'programChange':
-							console.log('program change to ' + event.programNumber);
+							//console.log('program change to ' + event.programNumber);
 							synth.channels[event.channel].setProgram(event.programNumber);
 							break;
 					}
