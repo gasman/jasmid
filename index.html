@@ -1,0 +1,48 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<script src="jquery-1.4.3.min.js"></script>
+		<script src="stream.js"></script>
+		<script src="midifile.js"></script>
+		<script src="replayer.js"></script>
+		<script src="synth.js"></script>
+		<script src="audio.js"></script>
+		<script>
+			function loadRemote(path, callback) {
+				var fetch = new XMLHttpRequest();
+				fetch.open('GET', path);
+				fetch.overrideMimeType("text/plain; charset=x-user-defined");
+				fetch.onreadystatechange = function() {
+					if(this.readyState == 4 && this.status == 200) {
+						/* munge response into a binary string */
+						var t = this.responseText || "" ;
+						var ff = [];
+						var mx = t.length;
+						var scc= String.fromCharCode;
+						for (var z = 0; z < mx; z++) {
+							ff[z] = scc(t.charCodeAt(z) & 255);
+						}
+						callback(ff.join(""));
+					}
+				}
+				fetch.send();
+			}
+			
+			function play(file) {
+				loadRemote(file, function(data) {
+					midiFile = MidiFile(data);
+					replayer = Replayer(midiFile);
+					audio = AudioPlayer();
+					synth = Synth(44100);
+					audio.ready(function() {
+						replayer.replay(synth, audio);
+					});
+				})
+			}
+		</script>
+	</head>
+	<body>
+		<a href="javascript:void(play('minute_waltz.mid'))">Chopin - Waltz Op.61 (Minute Waltz)</a> |
+		<a href="javascript:void(play('rachmaninov3.mid'))">Rachmaninov - Piano Concerto No.3 (First movement)</a>
+	</body>
+</html>
