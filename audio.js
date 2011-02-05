@@ -6,8 +6,8 @@ function AudioPlayer(generator) {
 		audioElement.mozSetup(2, sampleRate); /* channels, sample rate */
 		
 		var buffer = []; /* data generated but not yet written */
-		var minBufferLength = 5 * 2 * sampleRate; /* refill buffer when there are only this many elements remaining */
-		var bufferFillLength = 5 * sampleRate;
+		var minBufferLength = 1 * 2 * sampleRate; /* refill buffer when there are only this many elements remaining */
+		var bufferFillLength = 1 * sampleRate;
 		
 		/* try to write what's in the buffer; if we can't clear it, try again in 20ms.
 			Assumes that buffer != null (if it is null, why on earth are you calling this?)
@@ -35,8 +35,8 @@ function AudioPlayer(generator) {
 		document.body.appendChild(c);
 		var swf = document.getElementById('da-swf');
 		
-		var minBufferDuration = 5000; /* refill buffer when there are only this many ms remaining */
-		var bufferFillLength = 5 * sampleRate;
+		var minBufferDuration = 1000; /* refill buffer when there are only this many ms remaining */
+		var bufferFillLength = 1 * sampleRate;
 		
 		function write(data) {
 			var out = new Array(data.length);
