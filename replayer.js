@@ -2,6 +2,7 @@ function Replayer(midiFile, synth) {
 	var trackStates = [];
 	var beatsPerMinute = 120;
 	var ticksPerBeat = midiFile.header.ticksPerBeat;
+	var channelCount = 16;
 	
 	for (var i = 0; i < midiFile.tracks.length; i++) {
 		trackStates[i] = {
@@ -14,6 +15,35 @@ function Replayer(midiFile, synth) {
 		};
 	}
 	
+	function Channel() {
+		
+		var generatorsByNote = {};
+		var currentProgram = PianoProgram;
+		
+		function noteOn(note, velocity) {
+			generator = currentProgram(note, velocity);
+			synth.addGenerator(generator);
+			generatorsByNote[note] = generator;
+		}
+		function noteOff(note, velocity) {
+			generatorsByNote[note].alive = false;
+		}
+		function setProgram(programNumber) {
+			currentProgram = PROGRAMS[programNumber] || PianoProgram;
+		}
+		
+		return {
+			'noteOn': noteOn,
+			'noteOff': noteOff,
+			'setProgram': setProgram
+		}
+	}
+	
+	var channels = [];
+	for (var i = 0; i < channelCount; i++) {
+		channels[i] = Channel();
+	}
+	
 	var nextEventInfo;
 	var samplesToNextEvent = 0;
 	
@@ -21,10 +51,8 @@ function Replayer(midiFile, synth) {
 		var ticksToNextEvent = null;
 		var nextEventTrack = null;
 		var nextEventIndex = null;
-		//console.log(trackStates);
 		
 		for (var i = 0; i < trackStates.length; i++) {
-			// console.log(i + ': ' + trackStates[i].nextEventIndex + ', ' + trackStates[i].ticksToNextEvent);
 			if (
 				trackStates[i].ticksToNextEvent != null
 				&& (ticksToNextEvent == null || trackStates[i].ticksToNextEvent < ticksToNextEvent)
@@ -108,14 +136,14 @@ function Replayer(midiFile, synth) {
 			case 'channel':
 				switch (event.subtype) {
 					case 'noteOn':
-						synth.channels[event.channel].noteOn(event.noteNumber, event.velocity);
+						channels[event.channel].noteOn(event.noteNumber, event.velocity);
 						break;
 					case 'noteOff':
-						synth.channels[event.channel].noteOff(event.noteNumber, event.velocity);
+						channels[event.channel].noteOff(event.noteNumber, event.velocity);
 						break;
 					case 'programChange':
 						//console.log('program change to ' + event.programNumber);
-						synth.channels[event.channel].setProgram(event.programNumber);
+						channels[event.channel].setProgram(event.programNumber);
 						break;
 				}
 				break;
