@@ -7,12 +7,16 @@ function Synth(sampleRate) {
 		var period = sampleRate / freq;
 		var t = 0;
 		
-		self.read = function() {
-			var phase = t / period;
-			var result = Math.sin(phase * 2 * Math.PI);
-			t++;
-			return [result, result];
+		self.generate = function(buf, offset, count) {
+			for (; count; count--) {
+				var phase = t / period;
+				var result = Math.sin(phase * 2 * Math.PI);
+				buf[offset++] += result;
+				buf[offset++] += result;
+				t++;
+			}
 		}
+		
 		return self;
 	}
 	function AttackDecayGenerator(child, attackTimeS, decayTimeS, amplitude) {
@@ -21,24 +25,32 @@ function Synth(sampleRate) {
 		var decayTime = sampleRate * decayTimeS;
 		var t = 0;
 		
-		self.read = function() {
-			if (!self.alive) return [0,0];
-			var input = child.read();
-			self.alive = child.alive;
-			
-			if (t < attackTime) {
-				var localAmplitude = amplitude * (t / attackTime);
-			} else {
-				var localAmplitude = amplitude * (1 - (t - attackTime) / decayTime);
-				if (localAmplitude <= 0) {
-					self.alive = false;
-					return [0,0];
-				}
+		self.generate = function(buf, offset, count) {
+			if (!self.alive) return;
+			var input = new Array(count * 2);
+			for (var i = 0; i < count*2; i++) {
+				input[i] = 0;
 			}
+			child.generate(input, 0, count);
 			
-			t++;
-			return [localAmplitude * input[0], localAmplitude * input[1]];
+			childOffset = 0;
+			for (; count; count--) {
+				if (t < attackTime) {
+					var localAmplitude = amplitude * (t / attackTime);
+				} else {
+					var localAmplitude = amplitude * (1 - (t - attackTime) / decayTime);
+					if (localAmplitude <= 0) {
+						self.alive = false;
+						return;
+					}
+				}
+				
+				buf[offset++] += input[childOffset++] * localAmplitude;
+				buf[offset++] += input[childOffset++] * localAmplitude;
+				t++;
+			}
 		}
+		
 		return self;
 	}
 	
@@ -84,20 +96,17 @@ function Synth(sampleRate) {
 			currentProgram = PROGRAMS[programNumber] || PianoGenerator;
 		}
 		
-		function read() {
-			var v = [0,0];
+		function generate(buf, offset, count) {
 			for (note in generatorsByNote) {
-				var r = generatorsByNote[note].read();
-				v[0] += r[0]; v[1] += r[1];
+				generatorsByNote[note].generate(buf, offset, count);
 			}
-			return v;
 		}
 		
 		return {
 			'noteOn': noteOn,
 			'noteOff': noteOff,
 			'setProgram': setProgram,
-			'read': read
+			'generate': generate
 		}
 	}
 	
@@ -114,15 +123,11 @@ function Synth(sampleRate) {
 	}
 	
 	function generateIntoBuffer(samplesToGenerate, buffer, offset) {
-		for (; samplesToGenerate; samplesToGenerate--) {
-			var l = 0;
-			var r = 0;
-			for (var j = 0; j < CHANNEL_COUNT; j++) {
-				var s = channels[j].read();
-				l += s[0]; r += s[1];
-			}
-			buffer[offset++] = l;
-			buffer[offset++] = r;
+		for (var i = offset; i < offset + samplesToGenerate * 2; i++) {
+			buffer[i] = 0;
+		}
+		for (var j = 0; j < CHANNEL_COUNT; j++) {
+			channels[j].generate(buffer, offset, samplesToGenerate);
 		}
 	}
 	

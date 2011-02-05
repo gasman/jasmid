@@ -75,10 +75,12 @@ function Replayer(midiFile, synth) {
 			if (samplesToNextEvent != null && samplesToNextEvent <= samplesRemaining) {
 				/* generate samplesToNextEvent samples, process event and repeat */
 				var samplesToGenerate = Math.ceil(samplesToNextEvent);
-				synth.generateIntoBuffer(samplesToGenerate, data, dataOffset);
-				dataOffset += samplesToGenerate * 2;
-				samplesRemaining -= samplesToGenerate;
-				samplesToNextEvent -= samplesToGenerate;
+				if (samplesToGenerate > 0) {
+					synth.generateIntoBuffer(samplesToGenerate, data, dataOffset);
+					dataOffset += samplesToGenerate * 2;
+					samplesRemaining -= samplesToGenerate;
+					samplesToNextEvent -= samplesToGenerate;
+				}
 				
 				handleEvent();
 				getNextEvent();
