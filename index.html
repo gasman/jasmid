@@ -30,11 +30,11 @@
 			function play(file) {
 				loadRemote(file, function(data) {
 					midiFile = MidiFile(data);
-					replayer = Replayer(midiFile);
-					audio = AudioPlayer();
 					synth = Synth(44100);
+					replayer = Replayer(midiFile, synth);
+					audio = AudioPlayer();
 					audio.ready(function() {
-						replayer.replay(synth, audio);
+						replayer.replay(audio);
 					});
 				})
 			}

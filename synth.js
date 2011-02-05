@@ -109,21 +109,27 @@ function Synth(sampleRate) {
 	function generate(samples) {
 		//console.log('generating ' + samples + ' samples');
 		var data = new Array(samples*2);
-		for (var i = 0; i < samples*2; i += 2) {
-			var v = [0,0];
-			for (var j = 0; j < CHANNEL_COUNT; j++) {
-				var r = channels[j].read();
-				v[0] += r[0]; v[1] += r[1];
-			}
-			data[i] = v[0];
-			data[i+1] = v[1];
-		}
+		generateIntoBuffer(samples, data, 0);
 		return data;
+	}
+	
+	function generateIntoBuffer(samplesToGenerate, buffer, offset) {
+		for (; samplesToGenerate; samplesToGenerate--) {
+			var l = 0;
+			var r = 0;
+			for (var j = 0; j < CHANNEL_COUNT; j++) {
+				var s = channels[j].read();
+				l += s[0]; r += s[1];
+			}
+			buffer[offset++] = l;
+			buffer[offset++] = r;
+		}
 	}
 	
 	return {
 		'sampleRate': sampleRate,
 		'channels': channels,
-		'generate': generate
+		'generate': generate,
+		'generateIntoBuffer': generateIntoBuffer
 	}
 }
