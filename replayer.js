@@ -60,6 +60,7 @@ function Replayer(midiFile, synth) {
 		} else {
 			nextEventInfo = null;
 			samplesToNextEvent = null;
+			self.finished = true;
 		}
 	}
 	
@@ -125,8 +126,10 @@ function Replayer(midiFile, synth) {
 		setTimeout(function() {replay(audio)}, 10);
 	}
 	
-	return {
-		'getNextEvent': getNextEvent,
-		'replay': replay
+	var self = {
+		'replay': replay,
+		'generate': generate,
+		'finished': false
 	}
+	return self;
 }

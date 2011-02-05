@@ -32,10 +32,7 @@
 					midiFile = MidiFile(data);
 					synth = Synth(44100);
 					replayer = Replayer(midiFile, synth);
-					audio = AudioPlayer();
-					audio.ready(function() {
-						replayer.replay(audio);
-					});
+					audio = AudioPlayer(replayer);
 				})
 			}
 		</script>
