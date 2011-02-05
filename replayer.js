@@ -21,12 +21,16 @@ function Replayer(midiFile, synth) {
 		var currentProgram = PianoProgram;
 		
 		function noteOn(note, velocity) {
+			if (generatorsByNote[note] && !generatorsByNote[note].released) {
+				/* playing same note before releasing the last one. BOO */
+				generatorsByNote[note].noteOff(); /* TODO: check whether we ought to be passing a velocity in */
+			}
 			generator = currentProgram(note, velocity);
 			synth.addGenerator(generator);
 			generatorsByNote[note] = generator;
 		}
 		function noteOff(note, velocity) {
-			generatorsByNote[note].alive = false;
+			generatorsByNote[note].noteOff(velocity);
 		}
 		function setProgram(programNumber) {
 			currentProgram = PROGRAMS[programNumber] || PianoProgram;

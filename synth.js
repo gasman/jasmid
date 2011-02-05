@@ -15,11 +15,22 @@ function SineGenerator(freq) {
 	
 	return self;
 }
-function AttackDecayGenerator(child, attackTimeS, decayTimeS, amplitude) {
+function ADSRGenerator(child, attackAmplitude, sustainAmplitude, attackTimeS, decayTimeS, releaseTimeS) {
 	var self = {'alive': true}
 	var attackTime = sampleRate * attackTimeS;
-	var decayTime = sampleRate * decayTimeS;
+	var decayTime = sampleRate * (attackTimeS + decayTimeS);
+	var decayRate = (attackAmplitude - sustainAmplitude) / (decayTime - attackTime);
+	var releaseTime = null; /* not known yet */
+	var endTime = null; /* not known yet */
+	var releaseRate = sustainAmplitude / (sampleRate * releaseTimeS);
 	var t = 0;
+	
+	self.noteOff = function() {
+		if (self.released) return;
+		releaseTime = t;
+		self.released = true;
+		endTime = releaseTime + sampleRate * releaseTimeS;
+	}
 	
 	self.generate = function(buf, offset, count) {
 		if (!self.alive) return;
@@ -30,20 +41,47 @@ function AttackDecayGenerator(child, attackTimeS, decayTimeS, amplitude) {
 		child.generate(input, 0, count);
 		
 		childOffset = 0;
-		for (; count; count--) {
+		while(count) {
 			if (t < attackTime) {
-				var localAmplitude = amplitude * (t / attackTime);
-			} else {
-				var localAmplitude = amplitude * (1 - (t - attackTime) / decayTime);
-				if (localAmplitude <= 0) {
-					self.alive = false;
-					return;
+				/* attack */
+				while(count && t < attackTime) {
+					var ampl = attackAmplitude * t / attackTime;
+					buf[offset++] += input[childOffset++] * ampl;
+					buf[offset++] += input[childOffset++] * ampl;
+					t++;
+					count--;
 				}
+			} else if (t < decayTime) {
+				/* decay */
+				while(count && t < decayTime) {
+					var ampl = attackAmplitude - decayRate * (t - attackTime);
+					buf[offset++] += input[childOffset++] * ampl;
+					buf[offset++] += input[childOffset++] * ampl;
+					t++;
+					count--;
+				}
+			} else if (releaseTime == null) {
+				/* sustain */
+				while(count) {
+					buf[offset++] += input[childOffset++] * sustainAmplitude;
+					buf[offset++] += input[childOffset++] * sustainAmplitude;
+					t++;
+					count--;
+				}
+			} else if (t < endTime) {
+				/* release */
+				while(count && t < endTime) {
+					var ampl = sustainAmplitude - releaseRate * (t - releaseTime);
+					buf[offset++] += input[childOffset++] * ampl;
+					buf[offset++] += input[childOffset++] * ampl;
+					t++;
+					count--;
+				}
+			} else {
+				/* dead */
+				self.alive = false;
+				return;
 			}
-			
-			buf[offset++] += input[childOffset++] * localAmplitude;
-			buf[offset++] += input[childOffset++] * localAmplitude;
-			t++;
 		}
 	}
 	
@@ -52,16 +90,18 @@ function AttackDecayGenerator(child, attackTimeS, decayTimeS, amplitude) {
 
 function PianoProgram(note, velocity) {
 	var frequency = 440 * Math.pow(2, (note-57)/12);
-	return AttackDecayGenerator(
+	return ADSRGenerator(
 		SineGenerator(frequency),
-		0.01, 0.75, 0.5 * (velocity / 128)
+		0.2 * (velocity / 128), 0.1 * (velocity / 128),
+		0.02, 0.3, 0.02
 	);
 }
 function StringProgram(note, velocity) {
 	var frequency = 440 * Math.pow(2, (note-57)/12);
-	return AttackDecayGenerator(
+	return ADSRGenerator(
 		SineGenerator(frequency),
-		0.4, 1, 0.5 * (velocity / 128)
+		0.5 * (velocity / 128), 0.2 * (velocity / 128),
+		0.4, 0.8, 0.4
 	);
 }
 
@@ -86,7 +126,6 @@ function Synth(sampleRate) {
 	}
 	
 	function generate(samples) {
-		//console.log('generating ' + samples + ' samples');
 		var data = new Array(samples*2);
 		generateIntoBuffer(samples, data, 0);
 		return data;
