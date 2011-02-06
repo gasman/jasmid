@@ -1,0 +1,79 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<script src="synth.js"></script>
+		<script src="audio.js"></script>
+		<script src="gui.min.js"></script>
+		<script>
+			function makeGui() {
+				var gui = new GUI();
+				gui.add(TestProgram, 'waveform', 0, 1);
+				gui.add(TestProgram, 'attackAmplitude', 0, 1);
+				gui.add(TestProgram, 'sustainAmplitude', 0, 1);
+				gui.add(TestProgram, 'attackTime', 0, 1);
+				gui.add(TestProgram, 'decayTime', 0, 1);
+				gui.add(TestProgram, 'releaseTime', 0, 1);
+				gui.add(TestProgram, 'phase', 0, 1);
+			}
+			
+			TestProgram = {
+				'waveform': 0,
+				'attackAmplitude': 0.2,
+				'sustainAmplitude': 0.1,
+				'attackTime': 0.02,
+				'decayTime': 0.3,
+				'releaseTime': 0.02,
+				'phase': 0.5,
+				'createNote': function(note, velocity) {
+					var frequency = 440 * Math.pow(2, (note-57)/12);
+					return ADSRGenerator(
+						(this.waveform ? SquareGenerator(frequency, this.phase) : SineGenerator(frequency)),
+						this.attackAmplitude * (velocity / 128), this.sustainAmplitude * (velocity / 128),
+						this.attackTime, this.decayTime, this.releaseTime
+					);
+				}
+			}
+			
+			function go(file) {
+				synth = Synth(44100);
+				var samplesToNextNote = 0;
+				var currentGenerator = null;
+				var noteNumber = 0;
+				replayer = {
+					'generate': function(samples) {
+						var data = new Array(samples*2);
+						var samplesRemaining = samples;
+						var dataOffset = 0;
+						
+						while (samplesRemaining) {
+							if (samplesToNextNote < samplesRemaining) {
+								if (samplesToNextNote > 0) {
+									synth.generateIntoBuffer(samplesToNextNote, data, dataOffset);
+									dataOffset += samplesToNextNote * 2;
+								}
+								if (currentGenerator) {
+									currentGenerator.noteOff();
+								}
+								currentGenerator = TestProgram.createNote(50 + noteNumber, 127);
+								noteNumber = (noteNumber + 1) % 12;
+								synth.addGenerator(currentGenerator);
+								samplesRemaining -= samplesToNextNote;
+								samplesToNextNote = 11025;
+							} else {
+								/* generate samplesRemaining */
+								synth.generateIntoBuffer(samplesRemaining, data, dataOffset);
+								samplesToNextNote -= samplesRemaining;
+								samplesRemaining = 0;
+							}
+						}
+						return data;
+					}
+				}
+				audio = AudioPlayer(replayer, {'latency': 0.5});
+			}
+		</script>
+	</head>
+	<body onload="makeGui()">
+		<a href="javascript:void(go())">go</a>
+	</body>
+</html>

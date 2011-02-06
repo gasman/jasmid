@@ -1,17 +1,18 @@
 var sampleRate = 44100; /* hard-coded in Flash player */
 
-function AudioPlayer(generator) {
+function AudioPlayer(generator, opts) {
+	if (!opts) opts = {};
+	var latency = opts.latency || 1;
+	var checkInterval = latency * 100 /* in ms */
+	
 	var audioElement = new Audio();
 	if (audioElement.mozSetup) {
 		audioElement.mozSetup(2, sampleRate); /* channels, sample rate */
 		
 		var buffer = []; /* data generated but not yet written */
-		var minBufferLength = 1 * 2 * sampleRate; /* refill buffer when there are only this many elements remaining */
-		var bufferFillLength = 1 * sampleRate;
+		var minBufferLength = latency * 2 * sampleRate; /* refill buffer when there are only this many elements remaining */
+		var bufferFillLength = Math.floor(latency * sampleRate);
 		
-		/* try to write what's in the buffer; if we can't clear it, try again in 20ms.
-			Assumes that buffer != null (if it is null, why on earth are you calling this?)
-		*/
 		function checkBuffer() {
 			if (buffer.length) {
 				var written = audioElement.mozWriteAudio(buffer);
@@ -21,7 +22,7 @@ function AudioPlayer(generator) {
 				buffer = buffer.concat(generator.generate(bufferFillLength));
 			}
 			if (!generator.finished || buffer.length) {
-				setTimeout(checkBuffer, 100);
+				setTimeout(checkBuffer, checkInterval);
 			}
 		}
 		checkBuffer();
@@ -35,8 +36,8 @@ function AudioPlayer(generator) {
 		document.body.appendChild(c);
 		var swf = document.getElementById('da-swf');
 		
-		var minBufferDuration = 1000; /* refill buffer when there are only this many ms remaining */
-		var bufferFillLength = 1 * sampleRate;
+		var minBufferDuration = latency * 1000; /* refill buffer when there are only this many ms remaining */
+		var bufferFillLength = latency * sampleRate;
 		
 		function write(data) {
 			var out = new Array(data.length);
@@ -50,7 +51,7 @@ function AudioPlayer(generator) {
 			if (swf.bufferedDuration() < minBufferDuration) {
 				write(generator.generate(bufferFillLength));
 			};
-			if (!generator.finished) setTimeout(checkBuffer, 100);
+			if (!generator.finished) setTimeout(checkBuffer, checkInterval);
 		}
 		
 		function checkReady() {

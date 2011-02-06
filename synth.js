@@ -15,6 +15,24 @@ function SineGenerator(freq) {
 	
 	return self;
 }
+
+function SquareGenerator(freq, phase) {
+	var self = {'alive': true};
+	var period = sampleRate / freq;
+	var t = 0;
+	
+	self.generate = function(buf, offset, count) {
+		for (; count; count--) {
+			var result = ( (t / period) % 1 > phase ? 1 : -1);
+			buf[offset++] += result;
+			buf[offset++] += result;
+			t++;
+		}
+	}
+	
+	return self;
+}
+
 function ADSRGenerator(child, attackAmplitude, sustainAmplitude, attackTimeS, decayTimeS, releaseTimeS) {
 	var self = {'alive': true}
 	var attackTime = sampleRate * attackTimeS;
@@ -42,7 +60,22 @@ function ADSRGenerator(child, attackAmplitude, sustainAmplitude, attackTimeS, de
 		
 		childOffset = 0;
 		while(count) {
-			if (t < attackTime) {
+			if (releaseTime != null) {
+				if (t < endTime) {
+					/* release */
+					while(count && t < endTime) {
+						var ampl = sustainAmplitude - releaseRate * (t - releaseTime);
+						buf[offset++] += input[childOffset++] * ampl;
+						buf[offset++] += input[childOffset++] * ampl;
+						t++;
+						count--;
+					}
+				} else {
+					/* dead */
+					self.alive = false;
+					return;
+				}
+			} else if (t < attackTime) {
 				/* attack */
 				while(count && t < attackTime) {
 					var ampl = attackAmplitude * t / attackTime;
@@ -60,7 +93,7 @@ function ADSRGenerator(child, attackAmplitude, sustainAmplitude, attackTimeS, de
 					t++;
 					count--;
 				}
-			} else if (releaseTime == null) {
+			} else {
 				/* sustain */
 				while(count) {
 					buf[offset++] += input[childOffset++] * sustainAmplitude;
@@ -68,19 +101,6 @@ function ADSRGenerator(child, attackAmplitude, sustainAmplitude, attackTimeS, de
 					t++;
 					count--;
 				}
-			} else if (t < endTime) {
-				/* release */
-				while(count && t < endTime) {
-					var ampl = sustainAmplitude - releaseRate * (t - releaseTime);
-					buf[offset++] += input[childOffset++] * ampl;
-					buf[offset++] += input[childOffset++] * ampl;
-					t++;
-					count--;
-				}
-			} else {
-				/* dead */
-				self.alive = false;
-				return;
 			}
 		}
 	}
@@ -88,21 +108,31 @@ function ADSRGenerator(child, attackAmplitude, sustainAmplitude, attackTimeS, de
 	return self;
 }
 
-function PianoProgram(note, velocity) {
-	var frequency = 440 * Math.pow(2, (note-57)/12);
-	return ADSRGenerator(
-		SineGenerator(frequency),
-		0.2 * (velocity / 128), 0.1 * (velocity / 128),
-		0.02, 0.3, 0.02
-	);
+PianoProgram = {
+	'attackAmplitude': 0.2,
+	'sustainAmplitude': 0.1,
+	'attackTime': 0.02,
+	'decayTime': 0.3,
+	'releaseTime': 0.02,
+	'createNote': function(note, velocity) {
+		var frequency = 440 * Math.pow(2, (note-57)/12);
+		return ADSRGenerator(
+			SineGenerator(frequency),
+			this.attackAmplitude * (velocity / 128), this.sustainAmplitude * (velocity / 128),
+			this.attackTime, this.decayTime, this.releaseTime
+		);
+	}
 }
-function StringProgram(note, velocity) {
-	var frequency = 440 * Math.pow(2, (note-57)/12);
-	return ADSRGenerator(
-		SineGenerator(frequency),
-		0.5 * (velocity / 128), 0.2 * (velocity / 128),
-		0.4, 0.8, 0.4
-	);
+
+StringProgram = {
+	'createNote': function(note, velocity) {
+		var frequency = 440 * Math.pow(2, (note-57)/12);
+		return ADSRGenerator(
+			SineGenerator(frequency),
+			0.5 * (velocity / 128), 0.2 * (velocity / 128),
+			0.4, 0.8, 0.4
+		);
+	}
 }
 
 PROGRAMS = {
