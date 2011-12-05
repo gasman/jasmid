@@ -6,6 +6,9 @@ function AudioPlayer(generator, opts) {
 	var checkInterval = latency * 100 /* in ms */
 	
 	var audioElement = new Audio();
+    var webkitAudio = window.AudioContext || window.webkitAudioContext;
+    var requestStop = false;
+    
 	if (audioElement.mozSetup) {
 		audioElement.mozSetup(2, sampleRate); /* channels, sample rate */
 		
@@ -21,15 +24,60 @@ function AudioPlayer(generator, opts) {
 			if (buffer.length < minBufferLength && !generator.finished) {
 				buffer = buffer.concat(generator.generate(bufferFillLength));
 			}
-			if (!generator.finished || buffer.length) {
+			if (!requestStop && (!generator.finished || buffer.length)) {
 				setTimeout(checkBuffer, checkInterval);
 			}
 		}
 		checkBuffer();
 		
 		return {
+            'type': 'Firefox Audio',
+            'stop': function() {
+                requestStop = true;
+            }
 		}
-	} else {
+	} else if (webkitAudio) {
+        // Uses Webkit Web Audio API if available
+        var context = new webkitAudio();
+        // context.sampleRate is probably 44.1K by default
+        
+        var channelCount = 2;
+        var bufferSize = 4096*4; // Higher for less gitches, lower for less latency
+        
+        var node = context.createJavaScriptNode(bufferSize, 0, channelCount);
+        
+        node.onaudioprocess = function(e) { process(e) };
+
+        function process(e) {
+            if (generator.finished) {
+                node.disconnect();
+                return;
+            }
+            
+            var dataLeft = e.outputBuffer.getChannelData(0);
+            var dataRight = e.outputBuffer.getChannelData(1);
+
+            var generate = generator.generate(bufferSize);
+
+            for (var i = 0; i < bufferSize; ++i) {
+                dataLeft[i] = generate[i*2];
+                dataRight[i] = generate[i*2+1];
+            }
+        }
+        
+        // start
+        node.connect(context.destination);
+        
+        return {
+            'stop': function() {
+                // pause
+                node.disconnect();
+                requestStop = true;
+			},
+            'type': 'Webkit Audio'
+        }
+
+    } else {
 		// Fall back to creating flash player
 		var c = document.createElement('div');
 		c.innerHTML = '<embed type="application/x-shockwave-flash" id="da-swf" src="da.swf" width="8" height="8" allowScriptAccess="always" style="position: fixed; left:-10px;" />';
@@ -51,7 +99,7 @@ function AudioPlayer(generator, opts) {
 			if (swf.bufferedDuration() < minBufferDuration) {
 				write(generator.generate(bufferFillLength));
 			};
-			if (!generator.finished) setTimeout(checkBuffer, checkInterval);
+			if (!requestStop && !generator.finished) setTimeout(checkBuffer, checkInterval);
 		}
 		
 		function checkReady() {
@@ -66,10 +114,12 @@ function AudioPlayer(generator, opts) {
 		return {
 			'stop': function() {
 				swf.stop();
+                requestStop = true;
 			},
 			'bufferedDuration': function() {
 				return swf.bufferedDuration();
 			},
+            'type': 'Flash Audio'
 		}
 	}
 }
