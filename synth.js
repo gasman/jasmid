@@ -108,6 +108,10 @@ function ADSRGenerator(child, attackAmplitude, sustainAmplitude, attackTimeS, de
 	return self;
 }
 
+function midiToFrequency(note) {
+    return 440 * Math.pow(2, (note-69)/12);
+}
+
 PianoProgram = {
 	'attackAmplitude': 0.2,
 	'sustainAmplitude': 0.1,
@@ -115,7 +119,7 @@ PianoProgram = {
 	'decayTime': 0.3,
 	'releaseTime': 0.02,
 	'createNote': function(note, velocity) {
-		var frequency = 440 * Math.pow(2, (note-57)/12);
+		var frequency = midiToFrequency(note);
 		return ADSRGenerator(
 			SineGenerator(frequency),
 			this.attackAmplitude * (velocity / 128), this.sustainAmplitude * (velocity / 128),
@@ -126,7 +130,7 @@ PianoProgram = {
 
 StringProgram = {
 	'createNote': function(note, velocity) {
-		var frequency = 440 * Math.pow(2, (note-57)/12);
+		var frequency = midiToFrequency(note);
 		return ADSRGenerator(
 			SineGenerator(frequency),
 			0.5 * (velocity / 128), 0.2 * (velocity / 128),

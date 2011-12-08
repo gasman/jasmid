@@ -25,7 +25,7 @@
 				'releaseTime': 0.02,
 				'phase': 0.5,
 				'createNote': function(note, velocity) {
-					var frequency = 440 * Math.pow(2, (note-57)/12);
+					var frequency = midiToFrequency(note);
 					return ADSRGenerator(
 						(this.waveform ? SquareGenerator(frequency, this.phase) : SineGenerator(frequency)),
 						this.attackAmplitude * (velocity / 128), this.sustainAmplitude * (velocity / 128),
