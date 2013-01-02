@@ -102,7 +102,7 @@ function MidiFile(data) {
 					case 0x59:
 						event.subtype = 'keySignature';
 						if (length != 2) throw "Expected length for keySignature event is 2, got " + length;
-						event.key = stream.readInt8();
+						event.key = stream.readInt8(true);
 						event.scale = stream.readInt8();
 						return event;
 					case 0x7f:
