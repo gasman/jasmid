@@ -5,9 +5,13 @@ Originally presented at BarCamp London 8, 13-14 November 2010
 Instructions:
 Open index.html in browser. Turn up volume. Click on link.
 
-Sound output is via the Mozilla Audio Data API, with a Flash fallback
-originally taken from dynamicaudio.js by Ben Firshman
-<https://github.com/bfirsh/dynamicaudio.js> and hacked around by me.
+Sound output is via one of the following mechanisms, according to what your
+browser supports:
+* Mozilla Audio Data API <https://wiki.mozilla.org/Audio_Data_API>
+* Web Audio API
+    <https://dvcs.w3.org/hg/audio/raw-file/tip/webaudio/specification.html>
+* a Flash fallback originally taken from dynamicaudio.js by Ben Firshman
+    <https://github.com/bfirsh/dynamicaudio.js> and hacked around by me.
 
 
 The code:
