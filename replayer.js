@@ -30,7 +30,9 @@ function Replayer(midiFile, synth) {
 			generatorsByNote[note] = generator;
 		}
 		function noteOff(note, velocity) {
-			generatorsByNote[note].noteOff(velocity);
+			if (generatorsByNote[note] && !generatorsByNote[note].released) {
+				generatorsByNote[note].noteOff(velocity);
+			}
 		}
 		function setProgram(programNumber) {
 			currentProgram = PROGRAMS[programNumber] || PianoProgram;
