@@ -57,7 +57,6 @@
 						;
 						reader.onload = function(e){
 							midiFile = MidiFile(e.target.result);
-							console.log(midiFile)
 							synth = Synth(44100);
 							replayer = Replayer(midiFile, synth);
 							audio = AudioPlayer(replayer);
