@@ -44,7 +44,7 @@ function AudioPlayer(generator, opts) {
 		var channelCount = 2;
 		var bufferSize = 4096*4; // Higher for less gitches, lower for less latency
 		
-		var node = context.createJavaScriptNode(bufferSize, 0, channelCount);
+		var node = context.createScriptProcessor(bufferSize, 0, channelCount);
 		
 		node.onaudioprocess = function(e) { process(e) };
 
