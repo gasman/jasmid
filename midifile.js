@@ -77,6 +77,7 @@ function MidiFile(data) {
 							+ (stream.readInt8() << 8)
 							+ stream.readInt8()
 						)
+						if (event.microsecondsPerBeat == 0) throw "Expected number of seconds per beat is > 0. Beat length calculation depends on this value.";
 						return event;
 					case 0x54:
 						event.subtype = 'smpteOffset';
