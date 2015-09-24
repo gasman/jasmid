@@ -22,9 +22,7 @@ function MidiFile(data) {
 		
 		event.deltaTime = stream.readVarInt();
 		event.playTime = currentPlayTime;
-		if(event.deltaTime){
-			currentPlayTime += event.deltaTime;
-		}
+		currentPlayTime += event.deltaTime || 0;
 		
 		var eventTypeByte = stream.readInt8();
 		if ((eventTypeByte & 0xf0) == 0xf0) {
