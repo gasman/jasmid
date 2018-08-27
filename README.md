@@ -1,14 +1,14 @@
-## THIS PROJECT IS NO LONGER MAINTAINED
+# THIS PROJECT IS NO LONGER MAINTAINED
 
 http://unmaintained.tech
 
 see [jasmid.ts fork](https://github.com/pravdomil/jasmid.ts)
 
-# jasmid - A Javascript MIDI file reader and synthesiser
+jasmid - A Javascript MIDI file reader and synthesiser
 
 Originally presented at BarCamp London 8, 13-14 November 2010
 
-## Instructions:
+Instructions:
 Open index.html in browser. Turn up volume. Click on link.
 
 Sound output is via one of the following mechanisms, according to what your
@@ -20,7 +20,7 @@ browser supports:
     <https://github.com/bfirsh/dynamicaudio.js> and hacked around by me.
 
 
-## The code:
+The code:
 stream.js - helper library for reading a string as a stream of typed data
 midifile.js - parses the MIDI file format into a header and a list of tracks,
     each consisting of a list of event objects
@@ -32,7 +32,7 @@ audio.js - passes the generated waveform to either the Audio Data API or the
     Flash fallback widget (da.swf)
 
 
-## Limitations:
+Limitations:
 * The only event types supported by replayer.js are note on, note off, tempo
     change and program change
 * There are currently only two instrument presets defined in synth.js - one for
