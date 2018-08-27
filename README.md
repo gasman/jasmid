@@ -1,8 +1,5 @@
-# THIS PROJECT IS NO LONGER MAINTAINED
-
-http://unmaintained.tech
-
-see [jasmid.ts fork](https://github.com/pravdomil/jasmid.ts)
+THIS PROJECT IS NO LONGER MAINTAINED. http://unmaintained.tech/
+===============================================================
 
 jasmid - A Javascript MIDI file reader and synthesiser
 
