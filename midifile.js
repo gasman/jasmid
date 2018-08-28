@@ -18,6 +18,7 @@ function MidiFile(data) {
 	function readEvent(stream) {
 		var event = {};
 		event.deltaTime = stream.readVarInt();
+		
 		var eventTypeByte = stream.readInt8();
 		if ((eventTypeByte & 0xf0) == 0xf0) {
 			/* system / meta event */
@@ -224,8 +225,11 @@ function MidiFile(data) {
 			throw "Unexpected chunk - expected MTrk, got "+ trackChunk.id;
 		}
 		var trackStream = Stream(trackChunk.data);
+		var currentPlayTime = 0;
 		while (!trackStream.eof()) {
 			var event = readEvent(trackStream);
+			event.playTime = currentPlayTime;
+			currentPlayTime += event.deltaTime || 0;
 			tracks[i].push(event);
 			//console.log(event);
 		}
