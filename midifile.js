@@ -76,7 +76,7 @@ function MidiFile(data) {
 							(stream.readInt8() << 16)
 							+ (stream.readInt8() << 8)
 							+ stream.readInt8()
-						)
+						);
 						return event;
 					case 0x54:
 						event.subtype = 'smpteOffset';
@@ -111,7 +111,7 @@ function MidiFile(data) {
 						return event;
 					default:
 						// console.log("Unrecognised meta event subtype: " + subtypeByte);
-						event.subtype = 'unknown'
+						event.subtype = 'unknown';
 						event.data = stream.read(length);
 						return event;
 				}
@@ -184,7 +184,7 @@ function MidiFile(data) {
 					event.value = param1 + (stream.readInt8() << 7);
 					return event;
 				default:
-					throw "Unrecognised MIDI event type: " + eventType
+					throw "Unrecognised MIDI event type: " + eventType;
 					/* 
 					console.log("Unrecognised MIDI event type: " + eventType);
 					stream.readInt8();
@@ -194,45 +194,52 @@ function MidiFile(data) {
 			}
 		}
 	}
-	
-	stream = Stream(data);
-	var headerChunk = readChunk(stream);
-	if (headerChunk.id != 'MThd' || headerChunk.length != 6) {
-		throw "Bad .mid file - header not found";
-	}
-	var headerStream = Stream(headerChunk.data);
-	var formatType = headerStream.readInt16();
-	var trackCount = headerStream.readInt16();
-	var timeDivision = headerStream.readInt16();
-	
-	if (timeDivision & 0x8000) {
-		throw "Expressing time division in SMTPE frames is not supported yet"
-	} else {
-		ticksPerBeat = timeDivision;
-	}
-	
-	var header = {
-		'formatType': formatType,
-		'trackCount': trackCount,
-		'ticksPerBeat': ticksPerBeat
-	}
-	var tracks = [];
-	for (var i = 0; i < header.trackCount; i++) {
-		tracks[i] = [];
-		var trackChunk = readChunk(stream);
-		if (trackChunk.id != 'MTrk') {
-			throw "Unexpected chunk - expected MTrk, got "+ trackChunk.id;
-		}
-		var trackStream = Stream(trackChunk.data);
-		while (!trackStream.eof()) {
-			var event = readEvent(trackStream);
-			tracks[i].push(event);
-			//console.log(event);
-		}
-	}
-	
-	return {
-		'header': header,
-		'tracks': tracks
-	}
+
+    if(typeof data !== 'undefined') {
+        stream = Stream(data);
+        var headerChunk = readChunk(stream);
+        if (headerChunk.id != 'MThd' || headerChunk.length != 6) {
+            throw "Bad .mid file - header not found";
+        }
+        var headerStream = Stream(headerChunk.data);
+        var formatType = headerStream.readInt16();
+        var trackCount = headerStream.readInt16();
+        var timeDivision = headerStream.readInt16();
+
+        if (timeDivision & 0x8000) {
+            throw "Expressing time division in SMTPE frames is not supported yet"
+        } else {
+            ticksPerBeat = timeDivision;
+        }
+
+        var header = {
+            'formatType': formatType,
+            'trackCount': trackCount,
+            'ticksPerBeat': ticksPerBeat
+        };
+        var tracks = [];
+        for (var i = 0; i < header.trackCount; i++) {
+            tracks[i] = [];
+            var trackChunk = readChunk(stream);
+            if (trackChunk.id != 'MTrk') {
+                throw "Unexpected chunk - expected MTrk, got "+ trackChunk.id;
+            }
+            var trackStream = Stream(trackChunk.data);
+            while (!trackStream.eof()) {
+                var event = readEvent(trackStream);
+                tracks[i].push(event);
+                //console.log(event);
+            }
+        }
+
+        return {
+            'header': header,
+            'tracks': tracks
+        };
+    }
+
+    return { // public static methods
+        readEvent: readEvent
+    };
+
 }
